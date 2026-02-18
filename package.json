@@ -1,0 +1,34 @@
+{
+  "name": "personal-frontend-cms",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tanstack/vue-query": "^5.92.9",
+    "@tiptap/extension-image": "^3.19.0",
+    "@tiptap/extension-link": "^3.19.0",
+    "@tiptap/extension-placeholder": "^3.19.0",
+    "@tiptap/extension-underline": "^3.19.0",
+    "@tiptap/starter-kit": "^3.19.0",
+    "@tiptap/vue-3": "^3.19.0",
+    "@vee-validate/zod": "^4.15.1",
+    "axios": "^1.13.5",
+    "vee-validate": "^4.15.1",
+    "vue": "^3.5.25",
+    "vue-router": "^4.6.4",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@vitejs/plugin-vue": "^6.0.2",
+    "@vue/tsconfig": "^0.8.1",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1",
+    "vue-tsc": "^3.1.5"
+  }
+}
