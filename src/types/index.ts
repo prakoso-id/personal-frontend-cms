@@ -254,10 +254,10 @@ export interface Profile {
 }
 
 export interface UpdateProfileRequest {
-  full_name?: string
-  bio?: string
-  avatar_url?: string
-  resume_url?: string
+  full_name: string
+  bio: string
+  avatar?: File | null
+  resume?: File | null
 }
 
 // ========================

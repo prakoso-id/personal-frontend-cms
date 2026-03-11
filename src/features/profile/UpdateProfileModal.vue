@@ -67,25 +67,63 @@
               </div>
 
               <div class="form-group">
-                <label class="form-label" for="avatar-url">Avatar URL</label>
-                <input
-                  id="avatar-url"
-                  v-model="profileForm.avatar_url"
-                  type="text"
-                  class="form-input"
-                  placeholder="https://..."
-                />
+                <label class="form-label">Avatar</label>
+                <div 
+                  class="file-drop-zone"
+                  @dragover.prevent
+                  @drop.prevent="handleAvatarDrop"
+                  @click="triggerAvatarSelect"
+                >
+                  <div v-if="profileForm.avatar" class="file-selected">
+                    {{ profileForm.avatar.name }} <span>({{ formatSize(profileForm.avatar.size) }})</span>
+                    <button type="button" @click.stop="profileForm.avatar = null" class="btn-clear text-sm">Remove New File</button>
+                  </div>
+                  <div v-else-if="existingAvatar" class="file-selected">
+                    <span>Current: <a :href="existingAvatar" target="_blank" @click.stop>Current Avatar</a></span>
+                    <span class="file-hint ml-2">Upload a new file to replace</span>
+                  </div>
+                  <div v-else class="file-placeholder">
+                    Drag & drop image here or click to select
+                    <span class="file-hint">jpg/jpeg/png/webp - max 5MB</span>
+                  </div>
+                  <input 
+                    ref="avatarInputRef"
+                    type="file" 
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" 
+                    class="hidden-input" 
+                    @change="handleAvatarSelect"
+                  />
+                </div>
               </div>
 
               <div class="form-group">
-                <label class="form-label" for="resume-url">Resume URL</label>
-                <input
-                  id="resume-url"
-                  v-model="profileForm.resume_url"
-                  type="text"
-                  class="form-input"
-                  placeholder="https://..."
-                />
+                <label class="form-label">Resume</label>
+                <div 
+                  class="file-drop-zone"
+                  @dragover.prevent
+                  @drop.prevent="handleResumeDrop"
+                  @click="triggerResumeSelect"
+                >
+                  <div v-if="profileForm.resume" class="file-selected">
+                    {{ profileForm.resume.name }} <span>({{ formatSize(profileForm.resume.size) }})</span>
+                    <button type="button" @click.stop="profileForm.resume = null" class="btn-clear text-sm">Remove New File</button>
+                  </div>
+                  <div v-else-if="existingResume" class="file-selected">
+                    <span>Current: <a :href="existingResume" target="_blank" @click.stop>Current Resume</a></span>
+                    <span class="file-hint ml-2">Upload a new file to replace</span>
+                  </div>
+                  <div v-else class="file-placeholder">
+                    Drag & drop file here or click to select
+                    <span class="file-hint">pdf/doc/docx - max 10MB</span>
+                  </div>
+                  <input 
+                    ref="resumeInputRef"
+                    type="file" 
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+                    class="hidden-input" 
+                    @change="handleResumeSelect"
+                  />
+                </div>
               </div>
 
               <div class="modal-actions">
@@ -193,12 +231,23 @@ const profileMutation = useUpdateProfile()
 const emailMutation = useUpdateEmail()
 const passwordMutation = useUpdatePassword()
 
+const existingAvatar = ref('')
+const existingResume = ref('')
+const avatarInputRef = ref<HTMLInputElement | null>(null)
+const resumeInputRef = ref<HTMLInputElement | null>(null)
+
 // Forms
-const profileForm = reactive({
+interface ProfileForm {
+  full_name: string
+  bio: string
+  avatar: File | null
+  resume: File | null
+}
+const profileForm = reactive<ProfileForm>({
   full_name: '',
   bio: '',
-  avatar_url: '',
-  resume_url: '',
+  avatar: null,
+  resume: null,
 })
 
 const emailForm = reactive({
@@ -214,10 +263,82 @@ watch(profile, (newProfile) => {
   if (newProfile) {
     profileForm.full_name = newProfile.FullName
     profileForm.bio = newProfile.Bio
-    profileForm.avatar_url = newProfile.AvatarURL
-    profileForm.resume_url = newProfile.ResumeURL
+    profileForm.avatar = null
+    profileForm.resume = null
+    existingAvatar.value = newProfile.AvatarURL || ''
+    existingResume.value = newProfile.ResumeURL || ''
   }
 }, { immediate: true })
+
+function triggerAvatarSelect() {
+  avatarInputRef.value?.click()
+}
+function triggerResumeSelect() {
+  resumeInputRef.value?.click()
+}
+
+function handleAvatarDrop(e: DragEvent) {
+  const file = e.dataTransfer?.files?.[0]
+  if (file) validateAndSetAvatar(file)
+}
+function handleAvatarSelect(e: Event) {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) validateAndSetAvatar(file)
+  if (target) target.value = ''
+}
+function validateAndSetAvatar(file: File) {
+  const validTypes = ['image/jpeg', 'image/png', 'image/webp']
+  const maxSize = 5 * 1024 * 1024
+  if (!validTypes.includes(file.type)) {
+    toast.error('Avatar must be JPG, PNG, or WEBP')
+    return
+  }
+  if (file.size > maxSize) {
+    toast.error('Avatar must be under 5MB')
+    return
+  }
+  profileForm.avatar = file
+}
+
+function handleResumeDrop(e: DragEvent) {
+  const file = e.dataTransfer?.files?.[0]
+  if (file) validateAndSetResume(file)
+}
+function handleResumeSelect(e: Event) {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) validateAndSetResume(file)
+  if (target) target.value = ''
+}
+function validateAndSetResume(file: File) {
+  const validTypes = [
+    'application/pdf', 
+    'application/msword', 
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]
+  const validExts = ['.pdf', '.doc', '.docx']
+  const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
+  
+  const maxSize = 10 * 1024 * 1024
+  if (!validTypes.includes(file.type) && !validExts.includes(fileExt)) {
+    toast.error('Resume must be PDF, DOC, or DOCX')
+    return
+  }
+  if (file.size > maxSize) {
+    toast.error('Resume must be under 10MB')
+    return
+  }
+  profileForm.resume = file
+}
+
+function formatSize(bytes: number) {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
 
 // Handlers
 async function handleUpdateProfile() {
@@ -318,5 +439,64 @@ function handleError(err: any) {
 
 .mb-lg {
   margin-bottom: var(--space-lg);
+}
+
+.file-drop-zone {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-xl);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background-color: var(--bg-secondary);
+}
+
+.file-drop-zone:hover {
+  border-color: var(--accent-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.file-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  color: var(--text-secondary);
+}
+
+.file-hint {
+  font-size: 0.875rem;
+  color: var(--text-tertiary);
+}
+
+.file-selected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.btn-clear {
+  background: none;
+  border: none;
+  color: var(--error-color, #ef4444);
+  cursor: pointer;
+}
+
+.btn-clear:hover {
+  text-decoration: underline;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
 }
 </style>

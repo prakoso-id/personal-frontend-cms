@@ -6,7 +6,21 @@ export function loginApi(credentials: LoginRequest) {
 }
 
 export function updateProfileApi(data: UpdateProfileRequest) {
-  return api.put<ApiResponse<any>>('/admin/profile', data)
+  const formData = new FormData()
+  formData.append('full_name', data.full_name)
+  formData.append('bio', data.bio || '')
+  if (data.avatar) {
+    formData.append('avatar', data.avatar)
+  }
+  if (data.resume) {
+    formData.append('resume', data.resume)
+  }
+
+  return api.put<ApiResponse<any>>('/admin/profile', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
 }
 
 export function updateEmailApi(data: UpdateEmailRequest) {
